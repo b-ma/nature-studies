@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Perceptron</title>
+    <style>
+    body {
+        background-color: #000000;
+    }
+
+    canvas {
+        display: block;
+        margin: 100px auto;
+    }
+
+    a {
+        font-family: monospace;
+        color: #ffffff;
+    }
+    </style>
+</head>
+<body>
+    <a href="http://natureofcode.com/book/chapter-10-neural-networks/" target="_blank">source</a>
+    <canvas id="scene"></canvas>
+
+    <script>
+    var w = 600;
+    var h = 250;
+
+    var Perceptron = function(n) {
+        this.weights = [];
+        this.learningRate = 0.001;
+
+        for (var i = 0; i < n; i++) {
+            this.weights[i] = (Math.random() * 2) - 1;
+        }
+    }
+
+    Perceptron.prototype.feedForward = function(inputs) {
+        var sum = 0;
+
+        for (var i = 0; i < this.weights.length; i++) {
+            sum += this.weights[i] * inputs[i];
+        }
+
+        return this.activate(sum);
+    }
+
+    Perceptron.prototype.activate = function(sum) {
+        return sum > 0 ? 1 : -1;
+    }
+
+    Perceptron.prototype.train = function(inputs, desired) {
+        var guess = this.feedForward(inputs);
+        var error = desired - guess;
+
+        for (var i = 0; i < this.weights.length; i++) {
+            this.weights[i] += error * inputs[i] * this.learningRate;
+        }
+    }
+
+    var Trainer = function(x, y, a) {
+        this.inputs = [x, y, 1];
+        this.answer = a;
+    }
+
+    var ptron = new Perceptron(3);
+    // var point = [50, -12, 1];
+
+
+    function line(x) {
+        return 2 * x + 1;
+    }
+
+    for (var i = 0; i < 200; i++) {
+        var x = Math.random() * w;
+        var y = Math.random() * h;
+
+        var yLine = line(x);
+        var answer = y > yLine ? 1 : -1;
+
+        var trainer = new Trainer(x, y, answer);
+        ptron.train(trainer.inputs, trainer.answer);
+        console.log(ptron.weights);
+    }
+
+
+    </script>
+</body>
+</html>

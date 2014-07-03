@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Neural network diagram</title>
+    <style>
+    body {
+        background-color: #000000;
+    }
+
+    canvas {
+        display: block;
+        margin: 100px auto;
+    }
+
+    a {
+        font-family: monospace;
+        color: #ffffff;
+    }
+    </style>
+</head>
+<body>
+    <a href="http://natureofcode.com/book/chapter-10-neural-networks/" target="_blank">source</a>
+    <canvas id="scene"></canvas>
+
+    <script src="../lib/extend.js"></script>
+    <script src="../lib/vector.js"></script>
+    <script>
+    var w = 800;
+    var h = 250;
+
+    var canvas = document.getElementById('scene');
+    var ctx = canvas.getContext('2d');
+
+    ctx.canvas.width = w;
+    ctx.canvas.height = h;
+
+    function lerp(a, b, coef) {
+        return (1 - coef) * a + (coef * b);
+        // return (b - a) * coef;
+    }
+
+    var Network = function(x, y) {
+        this.location = new Vector(x, y);
+        this.neurons = [];
+    }
+
+    extend(Network.prototype, {
+        addNeuron: function(neuron) {
+            this.neurons.push(neuron);
+        },
+
+        connect: function(a, b) {
+            var c = new Connection(a, b, Math.random());
+            a.addConnection(c);
+        },
+
+        feedForward: function(input) {
+            var start = this.neurons[0];
+            start.feedForward(input);
+        },
+
+        update: function() {
+            this.neurons.forEach(function(n) {
+                n.update();
+            });
+        },
+
+        display: function(ctx) {
+            ctx.save();
+            ctx.translate(this.location.x, this.location.y);
+            this.neurons.forEach(function(neuron) {
+                neuron.display(ctx);
+            });
+            ctx.restore();
+        }
+    });
+
+
+    var Neuron = function(x, y, name) {
+        this.location = new Vector(x, y);
+        this.name = name;
+        this.connections = [];
+        this.sum = 0;
+
+        this.state = 'inert';
+        this.radiusDecay = 0;
+    }
+
+    extend(Neuron.prototype, {
+        addConnection: function(c) {
+            this.connections.push(c);
+        },
+
+        feedForward: function(input) {
+            this.sum += input;
+
+            if (this.sum > 1) {
+                this.fire();
+                this.sum = 0;
+            }
+        },
+
+        fire: function() {
+            this.state = 'firing-start';
+            this.connections.forEach(function(c) {
+                c.feedForward(this.sum);
+            }, this);
+        },
+
+        update: function() {
+            // could probably be more simple
+            if (this.state === 'firing-start' || this.state === 'firing-end') {
+                if (this.state === 'firing-start') {
+                    this.radiusDecay += 3;
+
+                    if (this.radiusDecay > 8) {
+                        this.state = 'firing-end';
+                    }
+                } else if (this.state === 'firing-end') {
+                    this.radiusDecay -= 0.6;
+                }
+
+                if (this.radiusDecay < 0) {
+                    this.radiusDecay = 0;
+                    this.state = 'inert';
+                }
+            }
+
+            this.connections.forEach(function(c) {
+                c.update();
+            });
+        },
+
+        display: function(ctx) {
+            // draw connections
+            ctx.save();
+            this.connections.forEach(function(c) {
+                c.display(ctx);
+            });
+            ctx.restore();
+
+            // draw nodes
+            ctx.save();
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(0, 0, 0, '+this.sum+')';
+            ctx.arc(this.location.x, this.location.y, 12, 0, Math.PI * 2, false);
+            ctx.fill();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.strokeStyle = '#000000';
+            ctx.arc(this.location.x, this.location.y, 12 + this.radiusDecay, 0, Math.PI * 2, false);
+            ctx.stroke();
+            ctx.closePath();
+            ctx.restore();
+        }
+    });
+
+
+    var Connection = function(from, to, weight) {
+        this.a = from;
+        this.b = to;
+        this.weight = weight;
+        this.messages = [];
+    }
+
+    extend(Connection.prototype, {
+        feedForward: function(input) {
+            var message = {
+                output: input * this.weight,
+                sender: this.a.location.clone()
+            };
+
+            this.messages.push(message);
+        },
+
+        update: function() {
+            if (!this.messages.length) { return; }
+
+            var messagesToDestroy = [];
+            this.messages.forEach(function(message, index) {
+                message.sender.x = lerp(message.sender.x, this.b.location.x, 0.1);
+                message.sender.y = lerp(message.sender.y, this.b.location.y, 0.1);
+                var distance = Vector.distance(message.sender, this.b.location);
+
+                if (distance < 1) {
+                    this.b.feedForward(message.output);
+                    messagesToDestroy.push(index);
+                }
+            }, this);
+            // destroy forwarded messages
+            messagesToDestroy.forEach(function(messageIndex) {
+                this.messages.splice(messageIndex, 1);
+            }, this);
+        },
+
+        display: function(ctx) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.lineWidth = Math.ceil(this.weight * 3);
+            ctx.strokeStyle = '#000000'
+            ctx.moveTo(this.a.location.x, this.a.location.y);
+            ctx.lineTo(this.b.location.x, this.b.location.y);
+            ctx.stroke();
+            ctx.closePath();
+
+            if (this.messages.length) {
+                this.messages.forEach(function(message) {
+                    ctx.beginPath();
+                    var c = parseInt(message.output * 120, 10);
+                    ctx.fillStyle = 'rgb('+c+','+c+','+c+')';
+                    ctx.arc(message.sender.x, message.sender.y, 12, 0, Math.PI * 2, false);
+                    ctx.fill();
+                    ctx.closePath();
+                }, this);
+            }
+
+            ctx.restore();
+        }
+    });
+
+    var network = new Network(w/2, h/2);
+
+    var start   = new Neuron(-350, 0, 'start');
+    var a       = new Neuron(-250, 0, 'a');
+    var b       = new Neuron(0, 100, 'b');
+    var c       = new Neuron(0, -100, 'c');
+    var d       = new Neuron(250, 0, 'd');
+    var end     = new Neuron(350, 0, 'end');
+
+    network.connect(start, a);
+    network.connect(a, b);
+    network.connect(a, c);
+    network.connect(b, d);
+    network.connect(c, d);
+    network.connect(d, end);
+
+    network.addNeuron(start);
+    network.addNeuron(a);
+    network.addNeuron(b);
+    network.addNeuron(c);
+    network.addNeuron(d);
+    network.addNeuron(end);
+
+    var frame = 0;
+
+    (function draw() {
+        ctx.beginPath();
+        ctx.fillStyle = '#ffffff';
+        ctx.rect(0, 0, w, h);
+        ctx.fill();
+        ctx.closePath();
+
+        if (frame === 0) {
+            // console.log('test');
+            network.feedForward(Math.random());
+            // network.feedForward(1.1);
+        }
+
+        network.update();
+        network.display(ctx);
+
+        frame = (frame + 1) % 30;
+        // if (frame < 5) {
+        //   setTimeout(draw, 200);
+        // }
+        window.requestAnimationFrame(draw);
+    }());
+
+    </script>
+</body>
+</html>

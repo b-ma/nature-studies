@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trees</title>
+    <style>
+    body {
+        background-color: #000000;
+    }
+
+    canvas {
+        display: block;
+        margin: 100px auto;
+    }
+
+    a {
+        font-family: monospace;
+        color: #ffffff;
+    }
+    </style>
+</head>
+<body>
+    <a href="http://natureofcode.com/book/chapter-8-fractals/" target="_blank">source</a>
+    <canvas id="scene"></canvas>
+
+    <script>
+    var canvas = document.getElementById('scene');
+    var ctx = canvas.getContext('2d');
+
+    var w = ctx.canvas.width = 400;
+    var h = ctx.canvas.height = 250;
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.fillStyle = '#000000';
+    var theta = Math.PI / 6;
+
+    var branch = function branch(len, lineWidth, radius) {
+        // console.log(lineWidth);
+        // draw branch
+        ctx.beginPath();
+        ctx.lineWidth = lineWidth;
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, len * -1);
+        ctx.stroke();
+        ctx.closePath();
+
+        // translate at the end of the branch
+        ctx.translate(0, len * -1);
+
+        len = len * 0.66;
+        lineWidth = (lineWidth < 2) ? 1 : lineWidth - 1;
+        radius = radius * 1.30;
+
+        // draw two branch each sides
+        if (len > 1) {
+            ctx.save();
+            ctx.rotate(theta + radius);
+            branch(len, lineWidth, radius);
+            ctx.restore();
+
+            ctx.save();
+            ctx.rotate(theta * -1 + radius);
+            branch(len, lineWidth, radius);
+            ctx.restore();
+        }
+    }
+
+    var counter = 0;
+    var step = Math.PI / 100;
+
+    (function draw() {
+        counter = (counter + step) % (Math.PI * 2);
+        var radius = Math.sin(counter) * (Math.PI / 200);
+        // clear canvas
+        ctx.fillRect(0, 0, w, h);
+        // translate to tree root
+        ctx.save();
+        ctx.translate(w / 2, h);
+        // draw tree
+        branch(80, 6, radius);
+        ctx.restore();
+
+        window.requestAnimationFrame(draw);
+    }());
+    </script>
+</body>
+</html>

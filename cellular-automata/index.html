@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cellular Automata</title>
+    <style>
+    body {
+        background-color: #000000;
+    }
+
+    canvas {
+        display: block;
+        margin: 100px auto;
+    }
+
+    a {
+        font-family: monospace;
+        color: #ffffff;
+    }
+    </style>
+</head>
+<body>
+    <a href="http://natureofcode.com/book/chapter-7-cellular-automata/" target="_blank">source</a>
+    <canvas id="scene"></canvas>
+
+    <script>
+    var w = 600;
+    var h = 250;
+
+    var CA = {
+        ruleset: [0, 1, 0, 1, 1, 0, 1, 0],
+
+        initialize: function(len) {
+            this.cells = [];
+
+            for (var i = 0; i < len; i++) {
+                this.cells.push(0);
+            }
+            // set the cell at the middle to 1
+            this.cells[Math.ceil(len / 2)] = 1;
+        },
+
+        generateNextGen: function() {
+            var nextgen = [];
+
+            for (var i = 0; i < this.cells.length; i++) {
+                left = this.cells[(i - 1) < 0 ? this.cells.length - 1 : i - 1];
+                me = this.cells[i];
+                right = this.cells[(i + 1) > this.cells.length - 1 ? 0 : i + 1];
+                nextgen[i] = this.applyRules(left, me, right);
+            }
+
+            this.cells = nextgen;
+        },
+
+        applyRules: function(a, b, c) {
+            var s = '' + a + b + c;
+            index = parseInt(s, 2);
+            return this.ruleset[index];
+        },
+
+        display: function(ctx, y, h) {
+            this.cells.forEach(function(cell, index) {
+                // var color = (cell === 1) ? 'rgba(0, 40, 200, 0.5)' : 'rgba(400, 0, 0, 0.5)';
+                var color = (cell === 1) ? '#ffffff' : '#000000';
+                ctx.save();
+                ctx.beginPath();
+                ctx.fillStyle = color;
+                ctx.translate(index, y);
+                ctx.rect(0, 0, 1, h);
+                // ctx.arc(0, 0, 40, 0, Math.PI * 2, false);
+                ctx.fill();
+                ctx.closePath();
+                ctx.restore();
+            });
+        }
+    }
+
+    var canvas = document.getElementById('scene');
+    var ctx = canvas.getContext('2d');
+
+    ctx.canvas.width = w;
+    ctx.canvas.height = h;
+
+    CA.initialize(w);
+    var y = 0;
+
+    (function draw() {
+        CA.display(ctx, y, 1);
+        // update for next gen
+        CA.generateNextGen();
+        y += 1;
+        window.requestAnimationFrame(draw, 50);
+    }());
+    </script>
+</body>
+</html>

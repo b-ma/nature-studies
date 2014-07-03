@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game of Life</title>
+    <style>
+    body {
+        background-color: #000000;
+    }
+
+    canvas {
+        display: block;
+        margin: 100px auto;
+    }
+
+    a {
+        font-family: monospace;
+        color: #ffffff;
+    }
+    </style>
+</head>
+<body>
+    <a href="http://natureofcode.com/book/chapter-7-cellular-automata/" target="_blank">source</a>
+    <canvas id="scene"></canvas>
+
+    <script>
+    var w = 600;
+    var h = 250;
+
+    var GoL = {
+        ruleset: [0, 1, 0, 1, 1, 0, 1, 0],
+
+        initialize: function(lenX, lenY) {
+            this.cells = [];
+
+            for (var x = 0; x < lenX; x++) {
+                this.cells[x] = [];
+
+                for (var y = 0; y < lenY; y++) {
+                    this.cells[x][y] = Math.random() < 0.1 ? 1 : 0;
+                }
+            }
+        },
+
+        generateNextGen: function() {
+            var nextgen = [];
+
+            for (var x = 0; x < this.cells.length; x++) {
+                nextgen[x] = [];
+
+                for (var y = 0; y < this.cells[x].length; y++) {
+                    var neighbors = 0;
+
+                    for (var i = -1; i <= 1; i++) {
+                        for (var j = -1; j <= 1; j++) {
+                            if (this.cells[x + i] && this.cells[x + i][y + j]) {
+                                neighbors += this.cells[x + i][y + j];
+                            }
+                        }
+                    }
+                    // don't count the current cell
+                    neighbors -= this.cells[x][y];
+
+                    if (this.cells[x][y] === 1 && neighbors < 2) {
+                        nextgen[x][y] = 0;
+                    } else if (this.cells[x][y] === 1 && neighbors > 3) {
+                        nextgen[x][y] = 0;
+                    } else if (this.cells[x][y] === 0 && neighbors === 3) {
+                        nextgen[x][y] = 1;
+                    } else {
+                        nextgen[x][y] = this.cells[x][y];
+                    }
+
+                }
+            }
+
+            this.cells = nextgen;
+        },
+
+        display: function(ctx) {
+            var w = ctx.canvas.width / this.cells.length;
+            var h = ctx.canvas.height / this.cells[0].length;
+
+            for (var x = 0; x < this.cells.length; x++) {
+                for (var y = 0; y < this.cells.length; y++) {
+                    var color = this.cells[x][y] === 1 ? '#000000' : '#ffffff';
+                    ctx.beginPath();
+                    ctx.fillStyle = color;
+                    ctx.rect(x * w, y * h, w, h);
+                    ctx.fill();
+                    ctx.closePath();
+                }
+            }
+        }
+    }
+
+    var canvas = document.getElementById('scene');
+    var ctx = canvas.getContext('2d');
+
+    ctx.canvas.width = w;
+    ctx.canvas.height = h;
+
+    var size = 2;
+    GoL.initialize(w / size, h / size);
+
+    (function draw() {
+        GoL.display(ctx);
+        GoL.generateNextGen();
+        setTimeout(draw, 150);
+        // window.requestAnimationFrame(draw, 50);
+    }());
+    </script>
+</body>
+</html>
