@@ -21,17 +21,21 @@
 <body>
     <a href="http://natureofcode.com/book/chapter-8-fractals/" target="_blank">source</a>
     <canvas id="scene"></canvas>
+    <button id="generate">generate</button>
 
     <script>
     var canvas = document.getElementById('scene');
     var ctx = canvas.getContext('2d');
 
-    var w = ctx.canvas.width = 400;
-    var h = ctx.canvas.height = 250;
+    var w = ctx.canvas.width = 600;
+    var h = ctx.canvas.height = 500;
 
     ctx.strokeStyle = '#ffffff';
     ctx.fillStyle = '#000000';
     var theta = Math.PI / 6;
+
+    var decays = [];
+    var index = 0;
 
     var branch = function branch(len, lineWidth, radius) {
         // console.log(lineWidth);
@@ -46,19 +50,32 @@
         // translate at the end of the branch
         ctx.translate(0, len * -1);
 
-        len = len * 0.66;
+        len = len * 0.76;
         lineWidth = (lineWidth < 2) ? 1 : lineWidth - 1;
+
         radius = radius * 1.30;
 
         // draw two branch each sides
-        if (len > 1) {
+        if (len > 3) {
+            if (!decays[index]) {
+                decays[index] = Math.random() * Math.PI / 5 - Math.PI / 10;
+            }
+
+            index += 1;
+
             ctx.save();
-            ctx.rotate(theta + radius);
+            ctx.rotate(theta + radius + decays[index]);
             branch(len, lineWidth, radius);
             ctx.restore();
 
+            if (!decays[index]) {
+                decays[index] = Math.random() * Math.PI / 5 - Math.PI / 10;
+            }
+
+            index += 1;
+
             ctx.save();
-            ctx.rotate(theta * -1 + radius);
+            ctx.rotate(theta * -1 + radius + decays[index]);
             branch(len, lineWidth, radius);
             ctx.restore();
         }
@@ -67,7 +84,17 @@
     var counter = 0;
     var step = Math.PI / 100;
 
+    var damn = false;
+
+    var btn = document.getElementById('generate');
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        decays = [];
+    }, false);
+
     (function draw() {
+        index = 0;
+
         counter = (counter + step) % (Math.PI * 2);
         var radius = Math.sin(counter) * (Math.PI / 200);
         // clear canvas
@@ -76,8 +103,14 @@
         ctx.save();
         ctx.translate(w / 2, h);
         // draw tree
-        branch(80, 6, radius);
+        branch(100, 7, radius);
         ctx.restore();
+
+        if (!damn) {
+            console.log(decays);
+            damn = true;
+        }
+
 
         window.requestAnimationFrame(draw);
     }());
