@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <charset="utf-8" />
+    <title>random cat</title>
+</head>
+<body>
+    <p id="counter"></p>
+    <p id="result"></p>
+
+    <script>
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var counter = 0;
+    var $result = document.getElementById('result');
+    var $counter = document.getElementById('counter');
+
+    function generateWord(len) {
+        var txt = '';
+
+        for (var i = 0; i < len; i++) {
+            txt += letters[Math.floor(Math.random() * letters.length)];
+        }
+
+        return txt;
+    }
+
+    (function findCat() {
+        var txt = generateWord(3);
+        $result.textContent = txt;
+
+        counter += 1;
+        $counter.textContent = counter;
+
+        if (txt !== 'CAT') { setTimeout(findCat, 20); }
+    }());
+    </script>
+</body>
+</html>

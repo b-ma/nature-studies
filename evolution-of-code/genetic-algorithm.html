@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>genetic algorithm</title>
+    <style>
+    p {
+        font-family: monospace;
+        font-size: 9px;
+    }
+    </style>
+</head>
+<body>
+    <p id="test"></p>
+    <script src="../lib/extend.js"></script>
+    <script>
+    var DNA = function() {
+        this.genes = [];
+        this.fitness = 0;
+
+        for (var i = 0; i < 18; i++) {
+            this.genes[i] = String.fromCharCode(Math.floor(Math.random() * 96) + 32);
+        }
+    }
+
+    extend(DNA.prototype, {
+        computeFitness: function(target) {
+            // this.genes = 'tozkjhq)E34 lpoERD';
+            // this.genes = this.genes.split('');
+            // console.log(this.genes);
+            score = 0;
+            this.genes.forEach(function(gene, index) {
+                // console.log(gene, target.charAt(index));
+                if (gene === target.charAt(index)) {
+                    score += 1;
+                }
+            });
+            this.fitness = score / target.length;
+            // console.log(this.fitness);
+        },
+
+        crossover: function(partner) {
+            var child = new DNA();
+            var midPoint = Math.floor(Math.random() * this.genes.length);
+
+            this.genes.forEach(function(gene, index) {
+                child.genes[index] = index < midPoint ? this.genes[index] : partner.genes[index];
+            }, this);
+
+            return child;
+        },
+
+        mutate: function(mutationRate) {
+            this.genes.forEach(function(gene, index) {
+                if (Math.random() < mutationRate) {
+                    this.genes[i] = String.fromCharCode(Math.floor(Math.random() * 96) + 32);
+                }
+            }, this);
+        },
+
+        getPhrase: function() {
+            return this.genes.join('');
+        }
+    });
+
+    var population = [];
+    var populationLength = 100;
+    var mutationRate = 0.01;
+    var $test = document.getElementById('test');
+
+    for (var i = 0; i < populationLength; i++) {
+        var dna = new DNA();
+        population.push(dna);
+    }
+
+    var target = 'To be or not to be';
+    // loop
+    (function nextGeneration() {
+        var txt = [];
+        population.forEach(function(dna) {
+            txt.push(dna.getPhrase());
+        });
+        $test.innerHTML = txt.join('<br />');
+
+        // 1. selection
+        population.forEach(function(dna, index) {
+            dna.computeFitness(target);
+        });
+
+        var matingPool = [];
+        population.forEach(function(dna, index) {
+            var fitness = Math.round(dna.fitness * 100);
+            for (var i = 0; i <= fitness; i++) {
+                matingPool.push(dna);
+            }
+        });
+
+        // 2. reproduction
+        for (var i = 0; i < population.length; i++) {
+            var parentA = population[Math.floor(Math.random() * population.length)];
+            var parentB = population[Math.floor(Math.random() * population.length)];
+
+            var child = parentA.crossover(parentB);
+            child.mutate(mutationRate);
+
+            population[i] = child;
+        }
+
+        setTimeout(nextGeneration, 500);
+    }());
+    </script>
+</body>
+</html>

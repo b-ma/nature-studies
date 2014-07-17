@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>leaf</title>
+    <style>
+    body {
+        background-color: #000000;
+    }
+
+    canvas {
+        display: block;
+        margin: 100px auto;
+    }
+    </style>
+</head>
+<body>
+    <canvas id="scene"></canvas>
+
+    <script src="../lib/extend.js"></script>
+    <script src="../lib/vector.js"></script>
+    <script>
+    var w = 600;
+    var h = 250;
+
+    var canvas = document.getElementById('scene');
+    var ctx = canvas.getContext('2d');
+
+    ctx.canvas.width = w;
+    ctx.canvas.height = h;
+
+    var clearCtx = function(ctx) {
+        ctx.save();
+        ctx.fillStyle = '#000000';
+        ctx.rect(0, 0, w, h);
+        ctx.fill();
+        ctx.restore();
+    };
+
+    var Leaf = function(w, h) {
+        this.w = w;
+        this.h = h;
+
+        this.contextPoint = new Vector();
+        this.endingPoint1 = new Vector(this.w / 4, this.h / 2);
+        this.controlPoint1_1 = new Vector(this.w / 20, 0);
+        this.controlPoint1_2 = new Vector(this.w / 20, this.h / 4);
+
+        this.endingPoint2 = new Vector(this.w, 0);
+        this.controlPoint2_1 = new Vector(this.w / 2, this.h / 2);
+        this.controlPoint2_2 = new Vector(this.w * 0.7, this.h / 10);
+    };
+
+    extend(Leaf.prototype, {
+        update: function() {
+            // define position + angular velocity
+        },
+
+        display: function(ctx) {
+            ctx.save();
+            ctx.translate(0, h / 2);
+
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.strokeStyle = '#ffffff';
+
+            ctx.moveTo(this.contextPoint.x, this.contextPoint.y);
+            ctx.bezierCurveTo(
+                this.controlPoint1_1.x, this.controlPoint1_1.y,
+                this.controlPoint1_2.x, this.controlPoint1_2.y,
+                this.endingPoint1.x, this.endingPoint1.y
+            );
+            ctx.bezierCurveTo(
+                this.controlPoint2_1.x, this.controlPoint2_1.y,
+                this.controlPoint2_2.x, this.controlPoint2_2.y,
+                this.endingPoint2.x, this.endingPoint2.y
+            );
+
+            ctx.moveTo(this.contextPoint.x, this.contextPoint.y);
+            ctx.bezierCurveTo(
+                this.controlPoint1_1.x, -1 * this.controlPoint1_1.y,
+                this.controlPoint1_2.x, -1 * this.controlPoint1_2.y,
+                this.endingPoint1.x, -1 * this.endingPoint1.y
+            );
+            ctx.bezierCurveTo(
+                this.controlPoint2_1.x, -1 * this.controlPoint2_1.y,
+                this.controlPoint2_2.x, -1 * this.controlPoint2_2.y,
+                this.endingPoint2.x, -1 * this.endingPoint2.y
+            );
+
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+    });
+
+    var leaf = new Leaf(200, 100);
+
+    (function draw() {
+        clearCtx(ctx);
+
+        leaf.display(ctx);
+
+    }())
+    </script>
+</body>
+</html>
