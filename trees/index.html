@@ -9,12 +9,18 @@
 
     canvas {
         display: block;
-        margin: 100px auto;
+        margin: 50px auto;
     }
 
     a {
         font-family: monospace;
         color: #ffffff;
+    }
+
+    button {
+        display: block;
+        background-color: #ffffff;
+        border: none;
     }
     </style>
 </head>
@@ -37,26 +43,40 @@
     var decays = [];
     var index = 0;
 
+    var test = true;
+    var elmCounter = 0
+
     var branch = function branch(len, lineWidth, radius) {
         // console.log(lineWidth);
+        elmCounter += 1;
+
         // draw branch
-        ctx.beginPath();
-        ctx.lineWidth = lineWidth;
-        ctx.moveTo(0, 0);
-        ctx.lineTo(0, len * -1);
-        ctx.stroke();
-        ctx.closePath();
+        if (len < 5) {
+            ctx.beginPath();
+            // ctx.lineWidth = lineWidth;
+            ctx.fillStyle = '#ffffff';
+            ctx.arc(0, 0, 3, 0, Math.PI * 2, true);
+            ctx.fill();
+            ctx.closePath();
+        } else {
+            ctx.beginPath();
+            ctx.lineWidth = lineWidth;
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, len * -1);
+            ctx.stroke();
+            ctx.closePath();
+        }
 
         // translate at the end of the branch
         ctx.translate(0, len * -1);
 
         len = len * 0.76;
-        lineWidth = (lineWidth < 2) ? 1 : lineWidth - 1;
+        lineWidth = (lineWidth < 2) ? 1 : lineWidth - 2;
 
         radius = radius * 1.30;
 
         // draw two branch each sides
-        if (len > 3) {
+        if (len > 4) {
             if (!decays[index]) {
                 decays[index] = Math.random() * Math.PI / 5 - Math.PI / 10;
             }
@@ -84,8 +104,6 @@
     var counter = 0;
     var step = Math.PI / 100;
 
-    var damn = false;
-
     var btn = document.getElementById('generate');
     btn.addEventListener('click', function(e) {
         e.preventDefault();
@@ -103,12 +121,13 @@
         ctx.save();
         ctx.translate(w / 2, h);
         // draw tree
-        branch(100, 7, radius);
+        branch(100, 14, radius);
         ctx.restore();
 
-        if (!damn) {
+        if (test) {
+            console.log(elmCounter);
             console.log(decays);
-            damn = true;
+            test = false;
         }
 
 
