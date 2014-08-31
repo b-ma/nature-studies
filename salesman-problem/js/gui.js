@@ -4,7 +4,7 @@ var model = {
     pause: false,
     slow: 1,
     bang: false,
-    generationInterval: 100
+    generationInterval: 1
 };
 
 var gui = new dat.GUI();

@@ -39,115 +39,164 @@ var Nest = Class.extend({
             }
 
             dna.sort(function() { return Math.random() - 0.5; });
-            //  add start and end point
-            dna.unshift(this.position);
-            dna.push(this.position);
+            this.addNestPosition(dna);
 
             var salesman = new Salesman(dna);
             this.population.push(salesman);
         }
     },
 
-    // @TODO refactor
-    evolvePopulation: function() {
-        this.generation += 1;
-        this.bestPath = +Infinity;
-        // evaluate fitness
+    // add the nest position at the begining and at the end of dna
+    addNestPosition: function(dna) {
+        //  add start and end point
+        dna.unshift(this.position);
+        dna.push(this.position);
+        return dna;
+    },
+
+    // the nest position shouldn't be in crossover and mutation
+    removeNestPosition: function(dna) {
+        dna.pop();
+        dna.shift();
+        return dna;
+    },
+
+    evaluateFitness: function() {
         var totalDistance = 0;
-        var totalFitness = 0;
+        this.totalFitness = 0;
+        // calculate the distance for each agent
         for (var i = 0; i < this.population.length; i++) {
             var distance = this.population[i].getDistance();
             if (distance < this.bestPath) { this.bestPath = distance; }
             totalDistance += distance;
         }
 
+        // define fitness - the lower the distance, the higher the fitness
         for (var i = 0; i < this.populationLength; i++) {
             var salesman = this.population[i];
             var fitness = salesman.distance / totalDistance;
             salesman.fitness = Math.pow(1 - fitness, 2);
-            totalFitness += salesman.fitness;
+            this.totalFitness += salesman.fitness;
         }
 
-        console.log('%cAverage distance: ' + (totalDistance / this.population.length), 'color:red');
+        // console.log('%cAverage distance: ' + (totalDistance / this.population.length), 'color:red');
+    },
 
-        // new population
-        var newPopulation = [];
-            // elitism - keep better elements from old population (10% ?)
+    // swap two genes
+    mutate: function(dna) {
+        var indexA = Math.floor(Math.random() * dna.length);
+        var indexB = Math.floor(Math.random() * dna.length);
+
+        var memo = dna[indexA];
+
+        dna[indexA] = dna[indexB];
+        dna[indexB] = memo;
+
+        return dna;
+    },
+
+    applyElitism: function(newPopulation) {
+        // get the best agent
         var sortedPopulation = this.population.slice(0);
         sortedPopulation.sort(function(a, b) { return a.distance < b.distance ? -1 : 1; });
-        var eliteDna1 = sortedPopulation[0].dna.slice(0);
-        var eliteDna2 = sortedPopulation[0].dna.slice(0);
+        var eliteDna = sortedPopulation[0].dna;
 
-        // create an elite copy with mutation
-        eliteDna2.shift();
-        eliteDna2.pop();
-        var indexA = Math.floor(Math.random() * eliteDna2.length);
-        var indexB = Math.floor(Math.random() * eliteDna2.length);
+        // keep the best agent (tag it as best agent)
+        var salesman = new Salesman(eliteDna.slice(0), 'elite');
+        newPopulation.push(salesman);
 
-        var memo = eliteDna2[indexA];
-        // console.log(indexA, indexB);
-        // console.log(sortedPopulation[0].dna);
-        eliteDna2[indexA] = eliteDna2[indexB];
-        eliteDna2[indexB] = memo;
-        // console.log(eliteDna2);
+        // create a mutated version of the best agent
+        var dna = eliteDna.slice(0);
+        this.removeNestPosition(dna);
+        this.mutate(dna);
+        this.addNestPosition(dna);
+        var salesman = new Salesman(dna);
+        newPopulation.push(salesman);
 
-        eliteDna2.push(this.position);
-        eliteDna2.unshift(this.position);
+        // @TODO - create a reverse version of the best agent
+        var dna = eliteDna.slice(0).reverse();
+        var salesman = new Salesman(dna);
+        newPopulation.push(salesman);
+    },
 
-        // console.log('-------------------------------------');
-        // console.log(eliteDna2.length);
+    selectParents: function() {
+        var parentsDna = [];
+        // select two parents randomly weighted to the fitness
+        for (var i = 0; i < 2; i++) {
+            var probability = Math.random() * this.totalFitness;
+            var sum = 0;
 
-        var eliteCopy = new Salesman(eliteDna1, true);
-        var eliteMutated = new Salesman(eliteDna2);
-        newPopulation.push(eliteMutated);
-        newPopulation.push(eliteCopy);
+            for (var j = 0; j < this.populationLength; j++) {
+                var salesman = this.population[j];
+                sum += salesman.fitness;
 
-        while(newPopulation.length < this.populationLength) {
-            // selection
-            var parentsDna = [];
-            for (var i = 0; i < 2; i++) {
-                var probability = Math.random() * totalFitness;
-                var sum = 0;
-
-                for (var j = 0; j < this.populationLength; j++) {
-                    var salesman = this.population[j];
-                    sum += salesman.fitness;
-                    if (sum >= probability) {
-                        var dna = salesman.dna.slice(0);
-                        // remove nest coordinates
-                        dna.shift();
-                        dna.pop();
-                        // store parent dna
-                        parentsDna.push(dna);
-                        break;
-                    }
+                if (sum >= probability) {
+                    var dna = salesman.dna.slice(0);
+                    // remove nest coordinates
+                    this.removeNestPosition(dna);
+                    // store parent dna
+                    parentsDna.push(dna);
+                    break;
                 }
             }
+        }
 
+        return parentsDna;
+    },
+
+    crossover: function(parentsDna) {
+        var dna = new Array(this.genome.length);
+        // select a bunh of gene from the parent dna
+        var crossoverLimits = [
+            Math.floor(Math.random() * parentsDna[0].length),
+            Math.floor(Math.random() * parentsDna[0].length)
+        ];
+
+        var start = Math.min.apply(null, crossoverLimits);
+        var stop  = Math.max.apply(null, crossoverLimits);
+        // copy the extracted sequence from parent 0
+        for (var i = start; i <= stop; i++) {
+            dna[i] = parentsDna[0][i];
+        }
+
+        // fill the holes with parents 2 genes
+        var j = 0;
+        for (var i = 0; i < dna.length; i++) {
+            while (dna[i] === undefined)  {
+                var gene = parentsDna[1][j];
+
+                if (dna.indexOf(gene) === -1) {
+                    dna[i] = gene;
+                } else {
+                    j += 1; // find the next parent gene
+                }
+            }
+        }
+
+        return dna;
+    },
+
+    evolvePopulation: function() {
+        this.generation += 1;
+        this.bestPath = +Infinity;
+        var newPopulation = [];
+        // define fitness
+        this.evaluateFitness();
+        // sort the population
+        this.applyElitism(newPopulation);
+        // evolve the rest of the population
+        while(newPopulation.length < this.populationLength) {
+            // selection (nest position is removed from parents dna)
+            var parentsDna = this.selectParents();
             // crossover - create offspring
-            var crossoverIndex = Math.floor(Math.random() * parentsDna[0].length);
-            var dna = [];
-
-            dna = dna.concat(parentsDna[0].splice(0, crossoverIndex));
-            // take genes not present from parent 1 in order
-            for (var i = 0; i < parentsDna[1].length; i++) {
-                var gene = parentsDna[1][i];
-                if (dna.indexOf(gene) === -1) { dna.push(gene); }
-            }
-
-            // mutation
+            var dna = this.crossover(parentsDna);
+            // mutation according to this.mutationProbability
             if (Math.random() < this.mutationProbability) {
-                var indexA = Math.floor(Math.random() * dna.length);
-                var indexB = Math.floor(Math.random() * dna.length);
-
-                var memo = dna[indexA];
-                dna[indexA] = dna[indexB];
-                dna[indexB] = memo;
+                this.mutate(dna);
             }
-
-            // acception
-            dna.push(this.position);
-            dna.unshift(this.position);
+            // add the nest position back
+            this.addNestPosition(dna);
+            // acception - add the offspring to the new population
             var salesman = new Salesman(dna);
             newPopulation.push(salesman);
         }
@@ -163,7 +212,7 @@ var Nest = Class.extend({
         }
 
         if (allDone) {
-            // skip ten generations
+            // compute next generations
             for (var i = 0; i < gui.model.generationInterval; i++) {
                 this.evolvePopulation();
             }

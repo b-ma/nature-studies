@@ -27,8 +27,8 @@ buffer.canvas.height = height;
 
 // define some random cities
 var cities = [];
-var citiesCount = 20;
-var populationLength = 60;
+var citiesCount = 10;
+var populationLength = 30;
 
 // create cities
 for (var i = 0; i < citiesCount; i++) {

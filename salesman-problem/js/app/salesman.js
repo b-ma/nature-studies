@@ -3,13 +3,13 @@ var Vector = require('vector')
 ;
 
 var Salesman = Class.extend({
-    init: function(dna, elite) {
+    init: function(dna, type) {
         this.dna = dna;
         this.fitness = 0;
         this.distance = 0;
         this.currentGene = 0;
         this.isArrived = false;
-        this.isElite = elite;
+        this.isElite = type === 'elite' ? true : false;
         // movement settings
         // assume pixels are meters
         this.position = this.dna[0].clone();
@@ -90,7 +90,7 @@ var Salesman = Class.extend({
             .add(steering)
             .truncate(this.MAX_SPEED * ratio * dt);
 
-        this.lastPosition = this.position.clone();
+        if (!this.lastPosition) { this.lastPosition = this.position.clone(); }
         this.position.add(this.velocity);
     },
 
@@ -114,6 +114,8 @@ var Salesman = Class.extend({
             buffer.lineTo(this.position.x, this.position.y);
             buffer.stroke();
             buffer.restore();
+
+            this.lastPosition = undefined;
         }
 
         var directionVector = this.velocity.clone().normalize(this.radius);
